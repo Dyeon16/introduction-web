@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>프로젝트 · 이다연의 포트폴리오</title>
+<meta name="description" content="이다연이 기획하고 개발한 프로젝트 목록">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body class="page">
+
+<nav class="nav">
+  <a href="index.html" class="nav__brand">이다연의 포트폴리오</a>
+  <button class="nav__toggle" aria-label="메뉴 열기" aria-expanded="false">
+    <span></span>
+  </button>
+  <div class="nav__links">
+    <a href="index.html" class="nav__link nav-label">홈</a>
+    <a href="spec.html" class="nav__link nav-label">스펙</a>
+    <a href="project.html" class="nav__link nav-label is-active">프로젝트</a>
+    <a href="chatbot.html" class="nav__link nav-label">AI 챗봇</a>
+    <a href="contact.html" class="nav__link nav-label">연락처</a>
+  </div>
+</nav>
+
+<main class="page__main">
+  <section class="section">
+    <div class="container" style="display:flex; flex-direction:column; gap:28px;">
+
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <span class="caption eyebrow">PROJECTS</span>
+        <h1 class="h1">프로젝트</h1>
+        <p class="body-small" style="color:var(--ink-secondary);">직접 기획하고 개발한 프로젝트를 소개합니다.</p>
+      </div>
+
+      <div class="project-list">
+
+        <article class="card project-card">
+          <button class="project-card__toggle" aria-expanded="true">
+            <span>
+              <span class="h2 project-card__title">부스 재고관리 앱</span>
+              <span class="caption project-card__period">2026</span>
+            </span>
+            <span class="body-small project-card__chip">접기 ▴</span>
+          </button>
+          <div class="project-card__detail">
+            <div class="project-card__stack">
+              <span class="stack-chip">React</span>
+              <span class="stack-chip">Capacitor</span>
+            </div>
+            <span class="body-small project-card__role">담당 역할: 기획 · 프론트엔드 개발</span>
+            <p class="body project-card__desc">오프라인 동인행사 부스에서 포스기 대신 쓰는 경량 재고관리/계산 앱. 로컬 스토리지 기반으로 동작하며 구글플레이 출시를 목표로 개발.</p>
+          </div>
+        </article>
+
+        <article class="card project-card">
+          <button class="project-card__toggle" aria-expanded="false">
+            <span>
+              <span class="h2 project-card__title">[프로젝트명]</span>
+              <span class="caption project-card__period">[기간]</span>
+            </span>
+            <span class="body-small project-card__chip">펼치기 ▾</span>
+          </button>
+          <div class="project-card__detail" hidden>
+            <div class="project-card__stack">
+              <span class="stack-chip">[기술]</span>
+              <span class="stack-chip">[기술]</span>
+            </div>
+            <span class="body-small project-card__role">담당 역할: [담당 역할]</span>
+            <p class="body project-card__desc">[프로젝트 설명이 여기에 들어갑니다.]</p>
+          </div>
+        </article>
+
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <span class="caption">© 2026 이다연 · Built with AWS</span>
+</footer>
+
+<script src="assets/js/nav.js"></script>
+<script src="assets/js/project.js"></script>
+</body>
+</html>
