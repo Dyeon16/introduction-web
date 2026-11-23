@@ -51,8 +51,8 @@ export default function Chatbot() {
   const count = text.length;
 
   return (
-    <section className="section chat-wrap">
-      <div className="chat-panel">
+    <section className="section">
+      <div className="container chat-panel">
         <div className="stack gap-2">
           <span className="caption eyebrow">AI CHAT</span>
           <h1 className="h1">AI 챗봇에게 물어보세요</h1>

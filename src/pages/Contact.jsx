@@ -3,8 +3,8 @@ import { contacts } from '../data/content.js';
 
 export default function Contact() {
   return (
-    <section className="section" style={{ display: 'flex', justifyContent: 'center' }}>
-      <div className="container stack gap-4" style={{ maxWidth: 640 }}>
+    <section className="section">
+      <div className="container stack gap-4">
         <div className="stack gap-2">
           <span className="caption eyebrow">CONTACT</span>
           <h1 className="h1">연락처</h1>

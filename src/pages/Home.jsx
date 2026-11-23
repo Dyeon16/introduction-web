@@ -1,9 +1,12 @@
 import Card from '../components/Card.jsx';
+import ChatFab from '../components/ChatFab.jsx';
 import { profile, quickFacts } from '../data/content.js';
 
 export default function Home() {
   return (
     <>
+      <ChatFab />
+
       <section className="hero">
         <div className="container hero__inner">
           <span className="caption eyebrow">PORTFOLIO</span>
