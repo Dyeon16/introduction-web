@@ -91,8 +91,17 @@ async function loadResumeContext() {
   const [profile, spec, project] = await Promise.all(
     ['PROFILE', 'SPEC', 'PROJECT'].map((pk) => queryPartition(pk))
   );
+  const label = (pk, sk) =>
+    pk === 'PROFILE' ? '프로필'
+      : pk === 'PROJECT' ? '프로젝트'
+      : sk.startsWith('CERT#') ? '자격증'
+      : sk.startsWith('SKILL#') ? '기술 스택'
+      : sk.startsWith('LANG#') ? '어학'
+      : sk.startsWith('AWARD#') ? '수상'
+      : '기타';
+  // 키(SK)는 내부 식별자라 모델에 넘기지 않고, 항목 종류만 한국어로 표시
   const text = [...profile, ...spec, ...project]
-    .map(({ PK, SK, ...rest }) => `[${PK} / ${SK}] ${JSON.stringify(rest)}`)
+    .map(({ PK, SK, ...rest }) => `- (${label(PK, SK)}) ${JSON.stringify(rest)}`)
     .join('\n');
   contextCache = { at: Date.now(), text };
   return text;
@@ -100,13 +109,17 @@ async function loadResumeContext() {
 
 function systemPrompt(context) {
   return [
-    '너는 이다연의 자기소개 웹앱에 있는 AI 안내 챗봇이야.',
-    '방문자(채용 담당자, 교수, 동료 개발자)의 질문에 아래 [자기소개 정보]에 있는 내용만 근거로 한국어로 친절하고 간결하게(3~4문장 이내) 답해.',
-    `정보에 없는 내용이거나 답할 수 없는 질문이면 추측하지 말고 정확히 이 문장만 답해: "${FALLBACK}"`,
-    '자기소개와 무관한 요청(코드 작성, 다른 주제 등)도 위 안내 문장으로 답해.',
+    '너는 이다연의 자기소개 웹앱에 있는 AI 안내 챗봇이야. 방문자는 채용 담당자, 교수, 동료 개발자야.',
     '',
-    '[자기소개 정보]',
+    '답변 규칙:',
+    '1. 아래 <자기소개_정보>에 있는 사실만 근거로, 이다연을 3인칭으로 소개하듯 한국어 존댓말로 답해.',
+    '2. 질문에 바로 답하고 2~4문장으로 짧게 써. 인사말, 자기소개, 이모지, 마크다운(굵게·목록·제목)은 쓰지 마.',
+    `3. 정보에 답이 없거나, 자기소개와 무관한 요청(코드 작성, 일반 상식, 다른 사람 이야기 등)이면 다른 말 없이 이 문장 하나만 그대로 출력해: ${FALLBACK}`,
+    '4. 정보에 없는 내용은 추측하거나 지어내지 마. 일부만 답할 수 있으면 아는 부분만 답해.',
+    '',
+    '<자기소개_정보>',
     context || '(등록된 정보 없음)',
+    '</자기소개_정보>',
   ].join('\n');
 }
 
