@@ -1,0 +1,32 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "WriteOwnLogs",
+      "Effect": "Allow",
+      "Action": ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"],
+      "Resource": "arn:aws:logs:ap-northeast-2:917246555749:log-group:/aws/lambda/introduction-webapp-*:*"
+    },
+    {
+      "Sid": "ReadResumeTable",
+      "Effect": "Allow",
+      "Action": ["dynamodb:Query", "dynamodb:GetItem"],
+      "Resource": "arn:aws:dynamodb:ap-northeast-2:917246555749:table/introduction-webapp-*"
+    },
+    {
+      "Sid": "InvokeClaudeOnBedrock",
+      "Effect": "Allow",
+      "Action": ["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"],
+      "Resource": [
+        "arn:aws:bedrock:*::foundation-model/anthropic.*",
+        "arn:aws:bedrock:*:917246555749:inference-profile/*anthropic.*"
+      ]
+    },
+    {
+      "Sid": "BedrockModelSubscription",
+      "Effect": "Allow",
+      "Action": ["aws-marketplace:ViewSubscriptions", "aws-marketplace:Subscribe"],
+      "Resource": "*"
+    }
+  ]
+}

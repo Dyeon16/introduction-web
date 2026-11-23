@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import Card from './Card.jsx';
 
-export default function ProjectCard({ project }) {
-  const [open, setOpen] = useState(!!project.defaultOpen);
+export default function ProjectCard({ project, defaultOpen = false }) {
+  const [open, setOpen] = useState(defaultOpen);
+  const stack = project.stack ?? [];
 
   return (
     <Card hover className="project-card">
@@ -23,13 +24,20 @@ export default function ProjectCard({ project }) {
 
       {open && (
         <div className="project-card__detail">
-          <div className="project-card__stack">
-            {project.stack.map((tech) => (
-              <span key={tech} className="stack-chip">{tech}</span>
-            ))}
-          </div>
-          <span className="body-small project-card__role">담당 역할: {project.role}</span>
-          <p className="body project-card__desc">{project.description}</p>
+          {stack.length > 0 && (
+            <div className="project-card__stack">
+              {stack.map((tech) => (
+                <span key={tech} className="stack-chip">{tech}</span>
+              ))}
+            </div>
+          )}
+          {project.role && <span className="body-small project-card__role">담당 역할: {project.role}</span>}
+          {project.description && <p className="body project-card__desc">{project.description}</p>}
+          {project.link && (
+            <a className="body-small project-card__link" href={project.link} target="_blank" rel="noopener">
+              {project.linkLabel || '프로젝트 링크'} ↗
+            </a>
+          )}
         </div>
       )}
     </Card>

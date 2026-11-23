@@ -30,11 +30,11 @@ export default function Chatbot() {
     try {
       const reply = await askBot(trimmed);
       setMessages((prev) => [...prev, { role: 'bot', text: reply ?? CHAT_FALLBACK_MESSAGE }]);
-    } catch {
-      setMessages((prev) => [
-        ...prev,
-        { role: 'error', text: '일시적으로 응답을 받아오지 못했어요. 잠시 후 다시 시도해 주세요.' },
-      ]);
+    } catch (err) {
+      const text = err?.message?.startsWith('요청이 너무')
+        ? err.message // API Gateway 요청 속도 제한(429)
+        : '일시적으로 응답을 받아오지 못했어요. 잠시 후 다시 시도해 주세요.';
+      setMessages((prev) => [...prev, { role: 'error', text }]);
     } finally {
       setLoading(false);
       scrollToBottom();

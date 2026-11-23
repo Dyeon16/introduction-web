@@ -1,20 +1,18 @@
-// API Gateway(HTTP API) + Lambda + Bedrock 연동
+// CloudFront(/api/chat) → API Gateway(HTTP API) → Lambda → DynamoDB + Bedrock
 // 요청: { message: string } → 응답: { reply: string }
-// VITE_CHAT_API_URL이 비어 있으면 데모(목업) 응답을 돌려줍니다.
+// 같은 도메인의 상대 경로라 CORS 설정이 필요 없음. 다른 주소를 쓰려면 VITE_CHAT_API_URL로 덮어쓰기.
+const CHAT_API_URL = import.meta.env.VITE_CHAT_API_URL || '/api/chat';
+
 export async function askBot(message) {
-  const apiUrl = import.meta.env.VITE_CHAT_API_URL;
-
-  if (!apiUrl) {
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    return '[데모 응답] 아직 API 엔드포인트가 연결되지 않았어요. .env의 VITE_CHAT_API_URL을 배포된 API Gateway 주소로 교체해 주세요.';
-  }
-
-  const res = await fetch(apiUrl, {
+  const res = await fetch(CHAT_API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ message }),
   });
 
+  if (res.status === 429) {
+    throw new Error('요청이 너무 잦아요. 잠시 후 다시 시도해 주세요.');
+  }
   if (!res.ok) {
     throw new Error(`API error: ${res.status}`);
   }

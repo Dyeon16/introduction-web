@@ -1,0 +1,52 @@
+[
+  {
+    "PK": "PROFILE",
+    "SK": "MAIN",
+    "name": "이다연",
+    "school": "한양대학교 ERICA · [학과]",
+    "intro": "[한줄소개 — 방문자에게 보여줄 핵심 한 문장]",
+    "about": "[자기소개서 본문 — 학업, 프로젝트, 실무 경험과 기술 역량을 소개하는 문단]\n\n[줄바꿈으로 문단을 나눌 수 있어요]",
+    "photoUrl": "/profile.jpg",
+    "facts": [
+      { "label": "소속", "value": "[대학교 · 학과]" },
+      { "label": "관심 분야", "value": "[프론트엔드 · 클라우드]" },
+      { "label": "목표", "value": "[한 줄 목표]" }
+    ]
+  },
+
+  { "PK": "SPEC", "SK": "CERT#006#CLF", "title": "AWS Certified Cloud Practitioner (CLF-C02)", "issuer": "Amazon Web Services", "date": "2026.10" },
+  { "PK": "SPEC", "SK": "CERT#005#[약어]", "title": "[자격증명]", "issuer": "[발급기관]", "date": "[YYYY.MM]" },
+
+  { "PK": "SPEC", "SK": "SKILL#001#REACT", "name": "React", "category": "프레임워크" },
+  { "PK": "SPEC", "SK": "SKILL#002#AWS", "name": "AWS", "category": "클라우드" },
+  { "PK": "SPEC", "SK": "SKILL#003#PYTHON", "name": "Python", "category": "언어" },
+
+  { "PK": "SPEC", "SK": "LANG#001#[시험]", "title": "[어학 시험명]", "detail": "[점수/등급]", "date": "[YYYY.MM]" },
+  { "PK": "SPEC", "SK": "AWARD#001#[대회]", "title": "[수상명]", "issuer": "[주최]", "date": "[YYYY.MM]" },
+
+  {
+    "PK": "PROJECT",
+    "SK": "PROJECT#001#DARTOO",
+    "title": "부스 재고관리 앱",
+    "period": "2026",
+    "role": "기획 · 프론트엔드 개발",
+    "stack": ["React", "Capacitor"],
+    "description": "오프라인 동인행사 부스에서 포스기 대신 쓰는 경량 재고관리/계산 앱. 로컬 스토리지 기반으로 동작하며 구글플레이 출시를 목표로 개발.",
+    "link": "https://github.com/Dyeon16",
+    "linkLabel": "GitHub"
+  },
+  {
+    "PK": "PROJECT",
+    "SK": "PROJECT#002#PORTFOLIO",
+    "title": "자기소개 웹앱 (이 사이트)",
+    "period": "2026.11",
+    "role": "기획 · 프론트엔드 · AWS 인프라",
+    "stack": ["React", "S3", "CloudFront", "API Gateway", "Lambda", "DynamoDB", "Bedrock"],
+    "description": "S3(비공개)+CloudFront(OAC)로 호스팅하고, API Gateway·Lambda·DynamoDB로 데이터를 제공하며 Bedrock 기반 AI 챗봇을 포함한 자기소개 웹앱.",
+    "link": "https://github.com/Dyeon16/introduction-web",
+    "linkLabel": "GitHub"
+  },
+
+  { "PK": "CONTACT", "SK": "EMAIL", "label": "Email", "value": "[email@example.com]", "href": "mailto:[email@example.com]", "icon": "@", "order": 1 },
+  { "PK": "CONTACT", "SK": "GITHUB", "label": "GitHub", "value": "github.com/Dyeon16", "href": "https://github.com/Dyeon16", "icon": "GH", "order": 2 }
+]

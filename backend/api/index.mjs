@@ -1,0 +1,185 @@
+// introduction-webapp API Lambda (Node.js 22, AWS SDK v3는 런타임 내장)
+// CloudFront(/api/*) → API Gateway(HTTP API) → 이 함수
+//
+//   GET  /api/profile   → DynamoDB Query(PK=PROFILE)
+//   GET  /api/spec      → DynamoDB Query(PK=SPEC)     자격증: 취득일 최신순 / 기술스택: 추가 순서
+//   GET  /api/projects  → DynamoDB Query(PK=PROJECT)  최신 프로젝트부터
+//   GET  /api/contacts  → DynamoDB Query(PK=CONTACT)
+//   POST /api/chat      → PROFILE+SPEC+PROJECT 조회 → 답변 범위 제한 프롬프트 → Bedrock(Converse)
+//
+// 단일 테이블 설계 (기획서): PK = PROFILE | SPEC | PROJECT | CONTACT
+//   PROFILE / MAIN, SPEC / CERT#006#CLF, SPEC / SKILL#001#REACT, PROJECT / PROJECT#001#DARTOO,
+//   CONTACT / EMAIL, CONTACT / GITHUB
+import { BedrockRuntimeClient, ConverseCommand } from '@aws-sdk/client-bedrock-runtime';
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { DynamoDBDocumentClient, QueryCommand } from '@aws-sdk/lib-dynamodb';
+
+const TABLE_NAME = process.env.TABLE_NAME || 'introduction-webapp-resume';
+const MODEL_ID = process.env.MODEL_ID || 'global.anthropic.claude-haiku-4-5-20251001-v1:0';
+const MAX_MESSAGE_LENGTH = 500;
+
+export const FALLBACK =
+  '죄송해요, 그 부분은 제가 가진 정보로는 답변드리기 어려워요. 직접 연락처로 문의해주세요!';
+
+const bedrock = new BedrockRuntimeClient({});
+const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
+
+// ---------- DynamoDB ----------
+async function queryPartition(pk) {
+  const items = [];
+  let ExclusiveStartKey;
+  do {
+    const res = await ddb.send(
+      new QueryCommand({
+        TableName: TABLE_NAME,
+        KeyConditionExpression: 'PK = :pk',
+        ExpressionAttributeValues: { ':pk': pk },
+        ExclusiveStartKey,
+      })
+    );
+    items.push(...(res.Items ?? []));
+    ExclusiveStartKey = res.LastEvaluatedKey;
+  } while (ExclusiveStartKey);
+  return items;
+}
+
+const strip = ({ PK, ...rest }) => rest; // 응답에서 PK는 제외, SK는 식별자로 유지
+
+async function getProfile() {
+  const items = await queryPartition('PROFILE');
+  const main = items.find((i) => i.SK === 'MAIN');
+  return { profile: main ? strip(main) : null };
+}
+
+async function getSpec() {
+  const items = (await queryPartition('SPEC')).map(strip);
+  const certificates = items
+    .filter((i) => i.SK.startsWith('CERT#'))
+    .sort((a, b) => String(b.date ?? '').localeCompare(String(a.date ?? ''))); // 취득일 최신순
+  const skills = items
+    .filter((i) => i.SK.startsWith('SKILL#'))
+    .sort((a, b) => a.SK.localeCompare(b.SK)); // SKILL#001, #002 ... 추가된 순서(마지막에 추가)
+  const others = items.filter((i) => !i.SK.startsWith('CERT#') && !i.SK.startsWith('SKILL#'));
+  return { certificates, skills, others };
+}
+
+async function getProjects() {
+  const projects = (await queryPartition('PROJECT'))
+    .map(strip)
+    .sort((a, b) => b.SK.localeCompare(a.SK)); // PROJECT#번호가 클수록 최신
+  return { projects };
+}
+
+async function getContacts() {
+  const contacts = (await queryPartition('CONTACT'))
+    .map(strip)
+    .sort((a, b) => (a.order ?? 999) - (b.order ?? 999) || a.SK.localeCompare(b.SK)); // order 필드 순
+  return { contacts };
+}
+
+const ROUTES = {
+  profile: getProfile,
+  spec: getSpec,
+  projects: getProjects,
+  contacts: getContacts,
+};
+
+// ---------- Chat ----------
+let contextCache = { at: 0, text: '' }; // 웜 컨테이너에서 5분간 재사용
+async function loadResumeContext() {
+  if (contextCache.text && Date.now() - contextCache.at < 5 * 60 * 1000) return contextCache.text;
+  const [profile, spec, project] = await Promise.all(
+    ['PROFILE', 'SPEC', 'PROJECT'].map((pk) => queryPartition(pk))
+  );
+  const text = [...profile, ...spec, ...project]
+    .map(({ PK, SK, ...rest }) => `[${PK} / ${SK}] ${JSON.stringify(rest)}`)
+    .join('\n');
+  contextCache = { at: Date.now(), text };
+  return text;
+}
+
+function systemPrompt(context) {
+  return [
+    '너는 이다연의 자기소개 웹앱에 있는 AI 안내 챗봇이야.',
+    '방문자(채용 담당자, 교수, 동료 개발자)의 질문에 아래 [자기소개 정보]에 있는 내용만 근거로 한국어로 친절하고 간결하게(3~4문장 이내) 답해.',
+    `정보에 없는 내용이거나 답할 수 없는 질문이면 추측하지 말고 정확히 이 문장만 답해: "${FALLBACK}"`,
+    '자기소개와 무관한 요청(코드 작성, 다른 주제 등)도 위 안내 문장으로 답해.',
+    '',
+    '[자기소개 정보]',
+    context || '(등록된 정보 없음)',
+  ].join('\n');
+}
+
+async function chat(body) {
+  const message = typeof body?.message === 'string' ? body.message.trim() : '';
+  if (!message) return json(400, { error: '"message" is required' });
+  if (message.length > MAX_MESSAGE_LENGTH) {
+    return json(400, { error: `message must be ${MAX_MESSAGE_LENGTH} characters or fewer` });
+  }
+
+  const context = await loadResumeContext().catch((err) => {
+    console.error('DynamoDB query failed', err);
+    return '';
+  });
+  // 등록된 정보가 하나도 없으면 Bedrock을 호출하지 않고 안내 문구 반환 (비용 절감)
+  if (!context) return json(200, { reply: FALLBACK });
+
+  try {
+    const result = await bedrock.send(
+      new ConverseCommand({
+        modelId: MODEL_ID,
+        system: [{ text: systemPrompt(context) }],
+        messages: [{ role: 'user', content: [{ text: message }] }],
+        inferenceConfig: { maxTokens: 400, temperature: 0.3 },
+      })
+    );
+    const reply = result.output?.message?.content?.map((c) => c.text ?? '').join('').trim();
+    return json(200, { reply: reply || FALLBACK });
+  } catch (err) {
+    console.error('Bedrock call failed', err);
+    return json(200, { reply: FALLBACK, degraded: true });
+  }
+}
+
+// ---------- HTTP ----------
+function json(statusCode, body) {
+  return {
+    statusCode,
+    headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' },
+    body: JSON.stringify(body),
+  };
+}
+
+function parseBody(event) {
+  if (!event?.body) return {};
+  const raw = event.isBase64Encoded ? Buffer.from(event.body, 'base64').toString() : event.body;
+  return JSON.parse(raw);
+}
+
+export const handler = async (event) => {
+  const method = event?.requestContext?.http?.method ?? 'GET';
+  // /api/spec, /spec 모두 허용 (CloudFront 경유 / API Gateway 직접 호출)
+  const resource = (event?.rawPath ?? '').replace(/^\/api/, '').replace(/^\/|\/$/g, '');
+
+  try {
+    if (method === 'POST' && resource === 'chat') {
+      let body;
+      try {
+        body = parseBody(event);
+      } catch {
+        return json(400, { error: 'Invalid JSON body' });
+      }
+      return await chat(body);
+    }
+
+    if (method === 'GET' && ROUTES[resource]) {
+      return json(200, await ROUTES[resource]());
+    }
+
+    // 404 대신 400: CloudFront의 SPA 에러 매핑(403/404 → index.html)에 걸리지 않도록
+    return json(400, { error: `Unsupported route: ${method} /${resource}` });
+  } catch (err) {
+    console.error('Request failed', err);
+    return json(500, { error: 'Internal error' });
+  }
+};
