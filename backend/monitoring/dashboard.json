@@ -1,0 +1,127 @@
+{
+  "start": "-PT24H",
+  "periodOverride": "auto",
+  "widgets": [
+    {
+      "type": "text", "x": 0, "y": 0, "width": 24, "height": 2,
+      "properties": {
+        "markdown": "## introduction-webapp 모니터링\nCloudFront(/api/*) → API Gateway `introduction-webapp-api` → Lambda `introduction-webapp-api` → DynamoDB `introduction-webapp-resume` / Bedrock `Claude Haiku 4.5` · 리전 ap-northeast-2"
+      }
+    },
+
+    {
+      "type": "metric", "x": 0, "y": 2, "width": 8, "height": 6,
+      "properties": {
+        "title": "API Gateway · 요청 수 / 오류",
+        "region": "ap-northeast-2", "view": "timeSeries", "stacked": false, "stat": "Sum", "period": 300,
+        "metrics": [
+          ["AWS/ApiGateway", "Count", "ApiId", "s7ancf0au9", { "label": "요청 수" }],
+          [".", "4xx", ".", ".", { "label": "4xx (스로틀링 429 포함)" }],
+          [".", "5xx", ".", ".", { "label": "5xx" }]
+        ]
+      }
+    },
+    {
+      "type": "metric", "x": 8, "y": 2, "width": 8, "height": 6,
+      "properties": {
+        "title": "API Gateway · 지연 시간 (ms)",
+        "region": "ap-northeast-2", "view": "timeSeries", "stacked": false, "period": 300,
+        "metrics": [
+          ["AWS/ApiGateway", "Latency", "ApiId", "s7ancf0au9", { "stat": "Average", "label": "전체 평균" }],
+          ["...", { "stat": "p90", "label": "전체 p90" }],
+          [".", "IntegrationLatency", ".", ".", { "stat": "Average", "label": "Lambda 구간 평균" }]
+        ]
+      }
+    },
+    {
+      "type": "metric", "x": 16, "y": 2, "width": 8, "height": 6,
+      "properties": {
+        "title": "API Gateway · 오늘 요청 합계",
+        "region": "ap-northeast-2", "view": "singleValue", "stat": "Sum", "period": 86400, "setPeriodToTimeRange": true,
+        "metrics": [
+          ["AWS/ApiGateway", "Count", "ApiId", "s7ancf0au9", { "label": "요청" }],
+          [".", "4xx", ".", ".", { "label": "4xx" }],
+          [".", "5xx", ".", ".", { "label": "5xx" }]
+        ]
+      }
+    },
+
+    {
+      "type": "metric", "x": 0, "y": 8, "width": 8, "height": 6,
+      "properties": {
+        "title": "Lambda · 호출 / 오류 / 스로틀",
+        "region": "ap-northeast-2", "view": "timeSeries", "stacked": false, "stat": "Sum", "period": 300,
+        "metrics": [
+          ["AWS/Lambda", "Invocations", "FunctionName", "introduction-webapp-api", { "label": "호출" }],
+          [".", "Errors", ".", ".", { "label": "오류" }],
+          [".", "Throttles", ".", ".", { "label": "스로틀" }]
+        ]
+      }
+    },
+    {
+      "type": "metric", "x": 8, "y": 8, "width": 8, "height": 6,
+      "properties": {
+        "title": "Lambda · 실행 시간 (ms)",
+        "region": "ap-northeast-2", "view": "timeSeries", "stacked": false, "period": 300,
+        "metrics": [
+          ["AWS/Lambda", "Duration", "FunctionName", "introduction-webapp-api", { "stat": "Average", "label": "평균" }],
+          ["...", { "stat": "Maximum", "label": "최대" }]
+        ]
+      }
+    },
+    {
+      "type": "metric", "x": 16, "y": 8, "width": 8, "height": 6,
+      "properties": {
+        "title": "DynamoDB · 읽기/쓰기 용량, 스로틀",
+        "region": "ap-northeast-2", "view": "timeSeries", "stacked": false, "stat": "Sum", "period": 300,
+        "metrics": [
+          ["AWS/DynamoDB", "ConsumedReadCapacityUnits", "TableName", "introduction-webapp-resume", { "label": "읽기 용량" }],
+          [".", "ConsumedWriteCapacityUnits", ".", ".", { "label": "쓰기 용량" }],
+          [".", "ThrottledRequests", ".", ".", { "label": "스로틀" }]
+        ]
+      }
+    },
+
+    {
+      "type": "metric", "x": 0, "y": 14, "width": 8, "height": 6,
+      "properties": {
+        "title": "Bedrock · 모델 호출 수 / 오류",
+        "region": "ap-northeast-2", "view": "timeSeries", "stacked": false, "period": 300,
+        "metrics": [
+          [{ "expression": "SEARCH('{AWS/Bedrock,ModelId} MetricName=\"Invocations\" haiku', 'Sum', 300)", "id": "inv", "label": "호출" }],
+          [{ "expression": "SEARCH('{AWS/Bedrock,ModelId} (MetricName=\"InvocationClientErrors\" OR MetricName=\"InvocationServerErrors\" OR MetricName=\"InvocationThrottles\") haiku', 'Sum', 300)", "id": "err", "label": "오류/스로틀" }]
+        ]
+      }
+    },
+    {
+      "type": "metric", "x": 8, "y": 14, "width": 8, "height": 6,
+      "properties": {
+        "title": "Bedrock · 입력/출력 토큰 (비용 추정용)",
+        "region": "ap-northeast-2", "view": "timeSeries", "stacked": true, "period": 300,
+        "metrics": [
+          [{ "expression": "SEARCH('{AWS/Bedrock,ModelId} MetricName=\"InputTokenCount\" haiku', 'Sum', 300)", "id": "in", "label": "입력 토큰" }],
+          [{ "expression": "SEARCH('{AWS/Bedrock,ModelId} MetricName=\"OutputTokenCount\" haiku', 'Sum', 300)", "id": "out", "label": "출력 토큰" }]
+        ]
+      }
+    },
+    {
+      "type": "metric", "x": 16, "y": 14, "width": 8, "height": 6,
+      "properties": {
+        "title": "Bedrock · 응답 지연 (ms)",
+        "region": "ap-northeast-2", "view": "timeSeries", "stacked": false, "period": 300,
+        "metrics": [
+          [{ "expression": "SEARCH('{AWS/Bedrock,ModelId} MetricName=\"InvocationLatency\" haiku', 'Average', 300)", "id": "lat", "label": "평균 지연" }]
+        ]
+      }
+    },
+
+    {
+      "type": "log", "x": 0, "y": 20, "width": 24, "height": 6,
+      "properties": {
+        "title": "Lambda 오류 로그 (최근)",
+        "region": "ap-northeast-2", "view": "table",
+        "query": "SOURCE '/aws/lambda/introduction-webapp-api' | fields @timestamp, @message\n| filter @message like /ERROR|failed|Exception/\n| sort @timestamp desc\n| limit 50"
+      }
+    }
+  ]
+}
