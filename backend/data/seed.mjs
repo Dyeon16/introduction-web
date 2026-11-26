@@ -66,6 +66,7 @@ try {
     writeFileSync(itemFile, JSON.stringify(Object.fromEntries(Object.entries(it).map(([k, v]) => [k, toAttr(v)]))));
     execFileSync(AWS, ['dynamodb', 'put-item', '--region', REGION, '--table-name', TABLE, '--item', `file://${itemFile}`], {
       stdio: ['ignore', 'ignore', 'inherit'],
+      env: { ...process.env, AWS_CLI_FILE_ENCODING: 'UTF-8' }, // Windows에서 한글 JSON 파일 읽기
     });
     console.log(`  업로드  ${label}`);
   }
